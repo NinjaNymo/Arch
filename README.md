@@ -237,6 +237,36 @@ exit
 reboot
 ```
 
+## Troubleshooting:
+### Macbook - No fan activity:
+As described above, Macs require the `applesmc` and `coretemp` kernel modules to interface with sensors and fans.
+
+However, the `applesmc` module might fail to write to the fan controller, leaving you without any fan-control.
+
+In my case, another kernel module was hijacking the interface which `applesmc` uses for fan control. This can be identified by doing
+```
+dmesg -t | grep applesmc
+```
+where `dmesg` prints the kernel ring buffer aka. the boot up log. Normally, the command should print something like this:
+```
+applesmc: key=561 fan=1 temp=33 index=33 acc=0 lux=2 kbd=1
+```
+If it says something about `hwmon_device_register` being deprecated, that is ok. **However**, if it says something about a write failed error, the module is not able to control the fans.
+
+I fixed this issue by doing two things, although it is a bit unclear which one solved it.
+
+1) [Reset the SMC controller](https://support.apple.com/en-us/HT201295):
+    - Turn off the device.
+    - Hold left_shift + left_ctrl + left_option + power for 10 seconds.
+2) Blacklist some kernel modules:
+    - Create a `.conf`, i.e. `blacklist.conf` inside /etc/modprobe.d/.
+    - Blacklist the noveau kernel module as it has been reported to mess with the `hwmon_device_register`:
+```
+# Inside /etc/modprobe.d/blacklist.conf
+blacklist nouveau
+``` 
+
+
 
 
 
